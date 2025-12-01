@@ -1,0 +1,11 @@
+idf_component_register(
+    SRCS
+        "src/xn_dice_app.c"
+    INCLUDE_DIRS
+        "include"
+    REQUIRES
+        xn_lvgl_driver
+        lvgl
+        esp_timer
+        freertos
+)
