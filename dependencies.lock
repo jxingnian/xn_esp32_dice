@@ -36,8 +36,7 @@ dependencies:
     version: 9.2.2
 direct_dependencies:
 - espressif/esp_lcd_spd2010
-- idf
 - lvgl/lvgl
-manifest_hash: 76cc2b52c8b46f926a22b1ad15738dd768c917171fce840dc7c99dbe1aa03432
+manifest_hash: 59bf8ecb7613b696ff2224982456fd5390630616e965797439018d9b6eed4b78
 target: esp32s3
 version: 2.0.0
