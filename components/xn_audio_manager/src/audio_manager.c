@@ -435,40 +435,55 @@ esp_err_t audio_manager_init(const audio_mgr_config_t *config)
         goto fail;
     }
 
-    afe_wrapper_config_t afe_cfg = {
-        .bsp_handle = s_ctx.bsp,
-        .reference_rb = s_ctx.reference_rb,
-        .wakeup_config = (afe_wakeup_config_t){
-            .enabled = s_ctx.config.wakeup_config.enabled,
-            .wake_word_name = s_ctx.config.wakeup_config.wake_word_name,
-            .model_partition = s_ctx.config.wakeup_config.model_partition,
-            .sensitivity = s_ctx.config.wakeup_config.sensitivity,
-        },
-        .vad_config = (afe_vad_config_t){
-            .enabled = s_ctx.config.vad_config.enabled,
-            .vad_mode = s_ctx.config.vad_config.vad_mode,
-            .min_speech_ms = s_ctx.config.vad_config.min_speech_ms,
-            .min_silence_ms = s_ctx.config.vad_config.min_silence_ms,
-        },
-        .feature_config = (afe_feature_config_t){
-            .aec_enabled = s_ctx.config.afe_config.aec_enabled,
-            .ns_enabled = s_ctx.config.afe_config.ns_enabled,
-            .agc_enabled = s_ctx.config.afe_config.agc_enabled,
-            .afe_mode = s_ctx.config.afe_config.afe_mode,
-        },
-        .event_callback = afe_event_handler,
-        .event_ctx = NULL,
-        .record_callback = afe_record_handler,
-        .record_ctx = NULL,
-        .running_ptr = &s_ctx.running,
-        .recording_ptr = &s_ctx.recording,
-    };
+    bool need_afe = false;
 
-    s_ctx.afe_wrapper = afe_wrapper_create(&afe_cfg);
-    if (!s_ctx.afe_wrapper) {
-        ESP_LOGE(TAG, "AFE 包装器创建失败");
-        ret = ESP_ERR_NO_MEM;
-        goto fail;
+    // 只有在至少开启了一项唤醒词 / VAD / AFE 功能时才创建 AFE 管线
+    if (s_ctx.config.wakeup_config.enabled ||
+        s_ctx.config.vad_config.enabled ||
+        s_ctx.config.afe_config.aec_enabled ||
+        s_ctx.config.afe_config.ns_enabled ||
+        s_ctx.config.afe_config.agc_enabled) {
+        need_afe = true;
+    }
+
+    if (need_afe) {
+        afe_wrapper_config_t afe_cfg = {
+            .bsp_handle = s_ctx.bsp,
+            .reference_rb = s_ctx.reference_rb,
+            .wakeup_config = (afe_wakeup_config_t){
+                .enabled = s_ctx.config.wakeup_config.enabled,
+                .wake_word_name = s_ctx.config.wakeup_config.wake_word_name,
+                .model_partition = s_ctx.config.wakeup_config.model_partition,
+                .sensitivity = s_ctx.config.wakeup_config.sensitivity,
+            },
+            .vad_config = (afe_vad_config_t){
+                .enabled = s_ctx.config.vad_config.enabled,
+                .vad_mode = s_ctx.config.vad_config.vad_mode,
+                .min_speech_ms = s_ctx.config.vad_config.min_speech_ms,
+                .min_silence_ms = s_ctx.config.vad_config.min_silence_ms,
+            },
+            .feature_config = (afe_feature_config_t){
+                .aec_enabled = s_ctx.config.afe_config.aec_enabled,
+                .ns_enabled = s_ctx.config.afe_config.ns_enabled,
+                .agc_enabled = s_ctx.config.afe_config.agc_enabled,
+                .afe_mode = s_ctx.config.afe_config.afe_mode,
+            },
+            .event_callback = afe_event_handler,
+            .event_ctx = NULL,
+            .record_callback = afe_record_handler,
+            .record_ctx = NULL,
+            .running_ptr = &s_ctx.running,
+            .recording_ptr = &s_ctx.recording,
+        };
+
+        s_ctx.afe_wrapper = afe_wrapper_create(&afe_cfg);
+        if (!s_ctx.afe_wrapper) {
+            ESP_LOGE(TAG, "AFE 包装器创建失败");
+            ret = ESP_ERR_NO_MEM;
+            goto fail;
+        }
+    } else {
+        ESP_LOGI(TAG, "AFE 功能全部关闭，跳过 AFE 管线创建");
     }
 
     button_handler_config_t button_cfg = {
