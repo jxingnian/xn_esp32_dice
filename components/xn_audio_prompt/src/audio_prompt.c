@@ -430,5 +430,8 @@ void audio_prompt_stop_loop(void)
     }
 
     s_loop_running = false;
+
+    // 清空播放缓冲区，避免残余音频继续播放
+    audio_manager_clear_playback_buffer();
 }
 

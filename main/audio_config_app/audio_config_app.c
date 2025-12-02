@@ -2,7 +2,7 @@
  * @Author: 星年 && jixingnian@gmail.com
  * @Date: 2025-11-27 21:48:21
  * @LastEditors: xingnian jixingnian@gmail.com
- * @LastEditTime: 2025-12-02 11:54:29
+ * @LastEditTime: 2025-12-02 12:37:27
  * @FilePath: \xn_esp32_dice\main\audio_config_app\audio_config_app.c
  * @Description: 音频配置 - 统一构建音频管理器配置参数
  * 
