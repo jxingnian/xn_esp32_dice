@@ -23,6 +23,7 @@ typedef enum {
     AUDIO_PROMPT_WAKEUP,        ///< 唤醒提示音
     AUDIO_PROMPT_THINKING,      ///< 思考中提示音
     AUDIO_PROMPT_VERSION_UPDATE,///< 版本更新提示音
+    AUDIO_PROMPT_DICE,          ///< 骰子摇动音效
     AUDIO_PROMPT_MAX            ///< 音效类型数量（不要使用）
 } audio_prompt_type_t;
 
@@ -89,6 +90,10 @@ bool audio_prompt_is_loaded(audio_prompt_type_t type);
  *      - ESP_ERR_NOT_FOUND: 音效未加载
  */
 esp_err_t audio_prompt_get_info(audio_prompt_type_t type, size_t *samples, uint32_t *duration_ms);
+
+esp_err_t audio_prompt_start_loop(audio_prompt_type_t type);
+
+void audio_prompt_stop_loop(void);
 
 #ifdef __cplusplus
 }

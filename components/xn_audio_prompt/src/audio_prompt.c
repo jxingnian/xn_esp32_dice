@@ -8,6 +8,8 @@
 #include "esp_log.h"
 #include "esp_heap_caps.h"
 #include "esp_spiffs.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -31,9 +33,14 @@ static prompt_info_t s_prompts[AUDIO_PROMPT_MAX] = {
     {"/prompt_spiffs/wakeup.pcm", NULL, 0, false},
     {"/prompt_spiffs/thinking.pcm", NULL, 0, false},
     {"/prompt_spiffs/version_update.pcm", NULL, 0, false},
+    {"/prompt_spiffs/dice.pcm", NULL, 0, false},
 };
 
 static bool s_initialized = false;
+
+static TaskHandle_t s_loop_task = NULL;
+static bool s_loop_running = false;
+static audio_prompt_type_t s_loop_type = AUDIO_PROMPT_BEEP;
 
 // ============ 内部函数 ============
 
@@ -136,6 +143,48 @@ static void unload_prompt(audio_prompt_type_t type)
     }
     prompt->samples = 0;
     prompt->loaded = false;
+}
+
+static void audio_prompt_loop_task(void *arg)
+{
+    (void)arg;
+
+    for (;;) {
+        if (!s_loop_running) {
+            break;
+        }
+
+        if (!s_initialized) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
+
+        if (s_loop_type >= AUDIO_PROMPT_MAX) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
+
+        prompt_info_t *prompt = &s_prompts[s_loop_type];
+        if (!prompt->loaded || !prompt->data || prompt->samples == 0) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
+
+        size_t free_samples = audio_manager_get_playback_free_space();
+        if (free_samples >= prompt->samples) {
+            esp_err_t ret = audio_manager_play_audio(prompt->data, prompt->samples);
+            if (ret != ESP_OK) {
+                ESP_LOGW(TAG, "loop play failed: %s", esp_err_to_name(ret));
+                vTaskDelay(pdMS_TO_TICKS(20));
+            }
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+    }
+
+    s_loop_task = NULL;
+    s_loop_running = false;
+    vTaskDelete(NULL);
 }
 
 // ============ 公共API实现 ============
@@ -327,5 +376,59 @@ esp_err_t audio_prompt_get_info(audio_prompt_type_t type, size_t *samples, uint3
     }
 
     return ESP_OK;
+}
+
+esp_err_t audio_prompt_start_loop(audio_prompt_type_t type)
+{
+    if (!s_initialized) {
+        ESP_LOGE(TAG, "音效模块未初始化");
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    if (type >= AUDIO_PROMPT_MAX) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    prompt_info_t *prompt = &s_prompts[type];
+    if (!prompt->loaded || !prompt->data || prompt->samples == 0) {
+        ESP_LOGW(TAG, "音效 %d 未加载，无法循环播放", type);
+        return ESP_ERR_NOT_FOUND;
+    }
+
+    s_loop_type = type;
+
+    if (s_loop_running && s_loop_task != NULL) {
+        // 已经在循环播放，直接返回
+        return ESP_OK;
+    }
+
+    // 确保播放任务运行
+    audio_manager_start_playback();
+
+    s_loop_running = true;
+
+    if (xTaskCreatePinnedToCore(audio_prompt_loop_task,
+                                "dice_snd_loop",
+                                3 * 1024,
+                                NULL,
+                                5,
+                                &s_loop_task,
+                                1) != pdPASS) {
+        ESP_LOGE(TAG, "创建音效循环任务失败");
+        s_loop_running = false;
+        s_loop_task = NULL;
+        return ESP_ERR_NO_MEM;
+    }
+
+    return ESP_OK;
+}
+
+void audio_prompt_stop_loop(void)
+{
+    if (!s_loop_running) {
+        return;
+    }
+
+    s_loop_running = false;
 }
 

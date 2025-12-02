@@ -2,7 +2,7 @@
  * @Author: 星年 jixingnian@gmail.com
  * @Date: 2025-11-22 13:43:50
  * @LastEditors: xingnian jixingnian@gmail.com
- * @LastEditTime: 2025-12-02 11:22:31
+ * @LastEditTime: 2025-12-02 12:14:01
  * @FilePath: \xn_esp32_dice\main\main.c
  * @Description: esp32 骰子演示 By.星年
  */
@@ -20,6 +20,9 @@
 #include "xn_lvgl.h"
 #include "xn_lottie_manager.h"
 #include "xn_dice_app.h"
+#include "audio_manager.h"
+#include "audio_prompt.h"
+#include "audio_config_app.h"
 
 typedef enum {
     APP_STATE_IDLE_COOL = 0,
@@ -59,6 +62,22 @@ void app_main(void)
         ESP_LOGE(TAG, "xn_dice_app_init failed: 0x%08" PRIx32, (uint32_t)ret);
     }
 
+    // 初始化音频管理器与音效模块
+    audio_mgr_config_t audio_cfg;
+    audio_config_app_build(&audio_cfg, NULL, NULL);
+    ret = audio_manager_init(&audio_cfg);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "audio_manager_init failed: 0x%08" PRIx32, (uint32_t)ret);
+    } else {
+        // 可选：设置默认音量
+        audio_manager_set_volume(100);
+
+        ret = audio_prompt_init();
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "audio_prompt_init failed: 0x%08" PRIx32, (uint32_t)ret);
+        }
+    }
+
     // 整个屏幕响应点击，用于触发摇骰
     lv_lock();
     lv_obj_t *screen = lv_screen_active();
@@ -92,6 +111,9 @@ static void app_on_screen_click(lv_event_t *e)
     ESP_LOGI(TAG, "dice results: %d %d %d %d %d %d",
              s_results[0], s_results[1], s_results[2],
              s_results[3], s_results[4], s_results[5]);
+
+    // 开始循环播放骰子音效
+    (void)audio_prompt_start_loop(AUDIO_PROMPT_DICE);
 
     // 隐藏结果页，播放骰子动画
     ESP_LOGI(TAG, "call xn_dice_app_show(false)");
