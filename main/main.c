@@ -30,9 +30,10 @@ static app_state_t s_app_state = APP_STATE_IDLE_COOL;
 static lv_timer_t *s_dice_timer = NULL;
 static lv_timer_t *s_idle_timer = NULL;
 static uint32_t s_last_interaction_tick = 0;
-static int s_current_result = 1;
+static int s_results[6] = {1, 1, 1, 1, 1, 1};
 
-#define DICE_ANIM_DURATION_MS   4200
+#define DICE_RESULT_COUNT      6
+#define DICE_ANIM_DURATION_MS  4200
 #define RESULT_IDLE_TIMEOUT_MS 15000
 
 static void app_on_screen_click(lv_event_t *e);
@@ -83,8 +84,10 @@ static void app_on_screen_click(lv_event_t *e)
         return;
     }
 
-    // 生成一个 1~6 的随机点数
-    s_current_result = (int)(esp_random() % 6U) + 1;
+    // 生成 6 个 1~6 的随机点数
+    for (int i = 0; i < DICE_RESULT_COUNT; i++) {
+        s_results[i] = (int)(esp_random() % 6U) + 1;
+    }
 
     // 隐藏结果页，播放骰子动画
     xn_dice_app_show(false);
@@ -112,8 +115,8 @@ static void app_on_dice_anim_done(lv_timer_t *timer)
     // 停止当前动画
     lottie_manager_stop_anim(-1);
 
-    // 显示结果页并更新点数
-    xn_dice_app_set_value(s_current_result);
+    // 显示结果页并更新 6 颗骰子的点数
+    xn_dice_app_set_results(s_results);
     xn_dice_app_show(true);
 
     s_app_state = APP_STATE_SHOW_RESULT;

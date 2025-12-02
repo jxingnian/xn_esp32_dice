@@ -26,7 +26,7 @@ extern "C" {
  */
 esp_err_t xn_dice_app_init(void);
 
-void xn_dice_app_set_value(int value);
+void xn_dice_app_set_results(const int values[6]);
 void xn_dice_app_show(bool show);
 
 #ifdef __cplusplus
