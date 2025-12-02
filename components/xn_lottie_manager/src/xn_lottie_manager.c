@@ -282,12 +282,19 @@
  
      ESP_LOGI(TAG, "初始化 Lottie 管理器");
  
-     // 检查屏幕是否有效
+     // 检查屏幕是否有效，并设置统一的深色背景
+     lv_lock();
      lv_obj_t *screen = lv_screen_active();
      if (screen == NULL) {
+         lv_unlock();
          ESP_LOGE(TAG, "无法获取活动屏幕");
          return false;
      }
+ 
+     lv_obj_set_style_bg_color(screen, lv_color_hex(0x020617), LV_PART_MAIN);
+     lv_obj_set_style_bg_grad_color(screen, lv_color_hex(0x0f172a), LV_PART_MAIN);
+     lv_obj_set_style_bg_grad_dir(screen, LV_GRAD_DIR_VER, LV_PART_MAIN);
+     lv_unlock();
  
      // 创建互斥锁
      g_anim_mutex = xSemaphoreCreateMutex();
