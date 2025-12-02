@@ -2,7 +2,7 @@
  * @Author: 星年 jixingnian@gmail.com
  * @Date: 2025-11-22 13:43:50
  * @LastEditors: xingnian jixingnian@gmail.com
- * @LastEditTime: 2025-12-01 17:25:40
+ * @LastEditTime: 2025-12-02 11:15:37
  * @FilePath: \xn_esp32_dice\components\xn_dice_app\src\xn_dice_app.c
  * @Description: esp32 骰子应用实现（LVGL 优雅骰子界面）
  */
@@ -57,6 +57,10 @@ static void dice_result_create_ui(void)
     lv_obj_center(s_root);
     lv_obj_set_style_bg_opa(s_root, LV_OPA_TRANSP, LV_PART_MAIN);
 
+    // 关键：让结果页不抢占点击事件，而是把事件冒泡给屏幕
+    lv_obj_add_flag(s_root, LV_OBJ_FLAG_EVENT_BUBBLE);
+    lv_obj_clear_flag(s_root, LV_OBJ_FLAG_CLICKABLE);
+
     const lv_coord_t dice_size = 90;
     const lv_coord_t pip_size  = 18;
     const lv_coord_t offset    = dice_size / 3;   // 点距中心偏移
@@ -67,6 +71,10 @@ static void dice_result_create_ui(void)
         view->root = lv_obj_create(s_root);
         lv_obj_remove_style_all(view->root);
         lv_obj_set_size(view->root, dice_size, dice_size);
+
+        // 同样让单个骰子方块不拦截点击，事件继续冒泡到父级/屏幕
+        lv_obj_add_flag(view->root, LV_OBJ_FLAG_EVENT_BUBBLE);
+        lv_obj_clear_flag(view->root, LV_OBJ_FLAG_CLICKABLE);
 
         // 简约白色骰子方块
         lv_obj_set_style_bg_color(view->root, lv_color_hex(0xf9fafb), LV_PART_MAIN);

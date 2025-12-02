@@ -2,7 +2,7 @@
  * @Author: 星年 jixingnian@gmail.com
  * @Date: 2025-11-22 13:43:50
  * @LastEditors: xingnian jixingnian@gmail.com
- * @LastEditTime: 2025-12-02 11:08:04
+ * @LastEditTime: 2025-12-02 11:22:31
  * @FilePath: \xn_esp32_dice\main\main.c
  * @Description: esp32 骰子演示 By.星年
  */
@@ -31,17 +31,13 @@ static const char *TAG = "APP_MAIN";
 
 static app_state_t s_app_state = APP_STATE_IDLE_COOL;
 static lv_timer_t *s_dice_timer = NULL;
-static lv_timer_t *s_idle_timer = NULL;
-static uint32_t s_last_interaction_tick = 0;
 static int s_results[6] = {1, 1, 1, 1, 1, 1};
 
 #define DICE_RESULT_COUNT      6
 #define DICE_ANIM_DURATION_MS  4200
-#define RESULT_IDLE_TIMEOUT_MS 15000
 
 static void app_on_screen_click(lv_event_t *e);
 static void app_on_dice_anim_done(lv_timer_t *timer);
-static void app_on_idle_timer(lv_timer_t *timer);
 
 void app_main(void)
 {
@@ -72,20 +68,14 @@ void app_main(void)
 
     // 进入待机状态：播放 COOL 动画
     s_app_state = APP_STATE_IDLE_COOL;
-    s_last_interaction_tick = lv_tick_get();
     lottie_manager_play_anim(LOTTIE_ANIM_COOL);
 
     ESP_LOGI(TAG, "enter idle state, play COOL anim");
-
-    // 周期检查空闲时间，在结果页长时间无操作时回到 cool 动画
-    s_idle_timer = lv_timer_create(app_on_idle_timer, 1000, NULL);
 }
 
 static void app_on_screen_click(lv_event_t *e)
 {
     LV_UNUSED(e);
-
-    s_last_interaction_tick = lv_tick_get();
 
     if (s_app_state == APP_STATE_ROLLING_DICE) {
         // 动画进行中，忽略新的点击
@@ -144,25 +134,4 @@ static void app_on_dice_anim_done(lv_timer_t *timer)
     ESP_LOGI(TAG, "show dice result page");
 
     s_app_state = APP_STATE_SHOW_RESULT;
-    s_last_interaction_tick = lv_tick_get();
-}
-
-static void app_on_idle_timer(lv_timer_t *timer)
-{
-    LV_UNUSED(timer);
-
-    if (s_app_state != APP_STATE_SHOW_RESULT) {
-        return;
-    }
-
-    uint32_t elapsed = lv_tick_elaps(s_last_interaction_tick);
-    if (elapsed < RESULT_IDLE_TIMEOUT_MS) {
-        return;
-    }
-
-    // 结果页长时间无操作，回到待机 COOL 动画
-    xn_dice_app_show(false);
-    lottie_manager_play_anim(LOTTIE_ANIM_COOL);
-    ESP_LOGI(TAG, "back to idle COOL after result timeout");
-    s_app_state = APP_STATE_IDLE_COOL;
 }
