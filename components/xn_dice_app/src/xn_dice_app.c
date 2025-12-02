@@ -227,6 +227,10 @@ void xn_dice_app_set_results(const int values[6])
         return;
     }
 
+    ESP_LOGI(TAG, "set_results: %d %d %d %d %d %d",
+             values[0], values[1], values[2],
+             values[3], values[4], values[5]);
+
     for (int i = 0; i < DICE_COUNT; i++) {
         int v = values[i];
         if (v < 1 || v > 6) {
@@ -236,27 +240,30 @@ void xn_dice_app_set_results(const int values[6])
     }
 
     if (!s_inited) {
+        ESP_LOGW(TAG, "set_results called before init");
         return;
     }
 
-    lv_lock();
+    ESP_LOGI(TAG, "apply results to dice faces");
     for (int i = 0; i < DICE_COUNT; i++) {
         dice_set_face(i, s_values[i]);
     }
-    lv_unlock();
 }
 
 void xn_dice_app_show(bool show)
 {
     if (!s_root) {
+        ESP_LOGW(TAG, "xn_dice_app_show(%d) but s_root is NULL", show);
         return;
     }
 
-    lv_lock();
+    ESP_LOGI(TAG, "xn_dice_app_show(%d), s_root=%p", show, (void *)s_root);
+
     if (show) {
         lv_obj_clear_flag(s_root, LV_OBJ_FLAG_HIDDEN);
     } else {
         lv_obj_add_flag(s_root, LV_OBJ_FLAG_HIDDEN);
     }
-    lv_unlock();
+
+    ESP_LOGI(TAG, "xn_dice_app_show(%d) done", show);
 }
