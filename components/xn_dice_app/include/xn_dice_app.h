@@ -11,6 +11,8 @@
 
 #include "esp_err.h"
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,6 +25,9 @@ extern "C" {
  * @return ESP_OK 成功，其他为错误码
  */
 esp_err_t xn_dice_app_init(void);
+
+void xn_dice_app_set_value(int value);
+void xn_dice_app_show(bool show);
 
 #ifdef __cplusplus
 }

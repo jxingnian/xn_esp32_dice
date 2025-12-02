@@ -1,0 +1,6 @@
+dependencies:
+  idf:
+    version: ">=4.1.0"
+
+  lvgl/lvgl: 9.2.2
+  espressif/esp_lcd_spd2010: 1.0.2
